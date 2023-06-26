@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
-
 from pyspark.sql import SparkSession
 from pyspark.sql import Row
 from pyspark.sql.functions import col
