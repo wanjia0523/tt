@@ -21,22 +21,23 @@ def parseInput(line):
 
 if __name__ == "__main__":
     # Create a SparkSession
-    spark = SparkSession.builder.appName("WineQuality").getOrCreate()
+    spark = SparkSession.\
+    builder.appName("MongoDBIntegration").\
+    getOrCreate()
 
-    # Read the dataset into a DataFrame
+     # Build RDD on top of users data file
     lines = spark.sparkContext.textFile("hdfs:///lab_test/wine")
-    data = lines.map(parseInput).toDF()
+    
+     # Creating new RDD by passing the parser fuction
+    data = lines.map(parseInput)
 
-    # Select the "quality" column
-    quality_df = data.select(col("quality"))
-
-    # Write the "quality" DataFrame to MongoDB
-    quality_df.write \
+    # Convert RDD into a DataFrame
+    usersDataset = spark.createDataFrame(quality)
+    
+    # Write the data into MongoDB
+    qualityDataset.write \
         .format("com.mongodb.spark.sql.DefaultSource") \
-        .option("uri", "mongodb://127.0.0.1/wine_db") \
+        .option("uri", "mongodb://127.0.0.1/winedata.quality") \
         .mode("append") \
         .save()
-
-    # Stop the SparkSession
-    spark.stop()
 
