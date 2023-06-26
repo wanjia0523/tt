@@ -33,7 +33,7 @@ if __name__ == "__main__":
     # Write the "quality" DataFrame to MongoDB
     quality_df.write \
         .format("com.mongodb.spark.sql.DefaultSource") \
-        .option("uri", "mongodb://127.0.0.1/wine_db.quality") \
+        .option("uri", "mongodb://127.0.0.1/wine_db") \
         .mode("append") \
         .save()
 
