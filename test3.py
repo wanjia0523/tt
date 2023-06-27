@@ -40,6 +40,6 @@ spark.sql("SELECT quality, fixed_acidity, volatile_acidity FROM wine_data WHERE 
 
 output.write.format("json")\
     .mode("overwrite")\
-    .option("path", "hdfs:///lab_test/job_output/")\
+    .option("path", "hdfs:///lab_test/")\
     .partitionBy("quality")\
     .save()
