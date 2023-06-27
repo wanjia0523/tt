@@ -1,25 +1,37 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col
+from pyspark.ml.feature import VectorAssembler
+from pyspark.ml.regression import GBTRegressor
+from pyspark.ml.evaluation import RegressionEvaluator
 
 # Create a SparkSession
-spark = SparkSession.builder.appName("WineQualityAnalysis").getOrCreate()
+spark = SparkSession.builder.appName("GradientBoostedTreeRegression").getOrCreate()
 
-# Read the wine data from CSV
-wine = spark.read.format("csv") \
-    .option("header", True) \
-    .option("inferSchema", True) \
-    .option("path", "hdfs:///lab_test/wine.csv") \
-    .load()
+# Read the dataset from a CSV file
+dataset = spark.read.csv(r"C:\Users\user\Documents\wine.csv", header=True, inferSchema=True)
 
-# Group the data by quality and count the occurrences
-quality_counts = wine.groupBy("quality").count().orderBy("quality")
+# Prepare the data for training
+assembler = VectorAssembler(inputCols=["fixed acidity", "volatile acidity", "citric acid", "residual sugar",
+                                       "chlorides", "free sulfur dioxide", "total sulfur dioxide", "density", "pH",
+                                       "sulphates", "alcohol"], outputCol="features")
+data = assembler.transform(dataset)
+train_data, test_data = data.randomSplit([0.7, 0.3])
 
-# Show the frequency of each quality rating
-quality_counts.show()
+# Create a GradientBoostedTreeRegressor
+gbt = GBTRegressor(labelCol="quality")
+
+# Train the model
+model = gbt.fit(train_data)
+
+# Make predictions on the test data
+predictions = model.transform(test_data)
+
+# Evaluate the model
+evaluator = RegressionEvaluator(labelCol="quality", metricName="rmse")
+rmse = evaluator.evaluate(predictions)
+mse = evaluator.evaluate(predictions, {evaluator.metricName: "mse"})
+
+print("Root Mean Squared Error (RMSE):", rmse)
+print("Mean Squared Error (MSE):", mse)
 
 # Stop the SparkSession
 spark.stop()
-
-
-
-
