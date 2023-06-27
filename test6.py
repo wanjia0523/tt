@@ -1,6 +1,6 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, FloatType, IntegerType
-
+pip install pandas
 # Create a SparkSession
 spark = SparkSession.builder.appName("CorrelationAnalysis").getOrCreate()
 
