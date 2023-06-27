@@ -1,52 +1,37 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.types import StructType, StructField, FloatType, IntegerType
+from pyspark.ml.feature import VectorAssembler
+from pyspark.ml.regression import GBTRegressor
+from pyspark.ml.evaluation import RegressionEvaluator
+
 # Create a SparkSession
-spark = SparkSession.builder.appName("CorrelationAnalysis").getOrCreate()
+spark = SparkSession.builder.appName("GradientBoostedTreeRegression").getOrCreate()
 
-# Define the schema for the wine data
-myschema = StructType([
-    StructField("fixed_acidity", FloatType(), True),
-    StructField("volatile_acidity", FloatType(), True),
-    StructField("citric_acid", FloatType(), True),
-    StructField("residual_sugar", FloatType(), True),
-    StructField("chlorides", FloatType(), True),
-    StructField("free_sulfur_dioxide", FloatType(), True),
-    StructField("total_sulfur_dioxide", FloatType(), True),
-    StructField("density", FloatType(), True),
-    StructField("pH", FloatType(), True),
-    StructField("sulphates", FloatType(), True),
-    StructField("alcohol", FloatType(), True),
-    StructField("quality", IntegerType(), True)
-])
+# Read the dataset from HDFS
+dataset = spark.read.csv("hdfs://localhost:9000/lab_test/wine.csv", header=True, inferSchema=True)
 
-# Read the wine data from CSV
-wine = spark.read.format("csv") \
-    .schema(myschema) \
-    .option("header", True) \
-    .option("path", "hdfs:///lab_test/wine.csv") \
-    .load()
+# Prepare the data for training
+assembler = VectorAssembler(inputCols=["fixed acidity", "volatile acidity", "citric acid", "residual sugar",
+                                       "chlorides", "free sulfur dioxide", "total sulfur dioxide", "density", "pH",
+                                       "sulphates", "alcohol"], outputCol="features")
+data = assembler.transform(dataset)
+train_data, test_data = data.randomSplit([0.7, 0.3])
 
-# Specify the columns for correlation calculation
-columns = [
-    "fixed_acidity",
-    "volatile_acidity",
-    "citric_acid",
-    "residual_sugar",
-    "chlorides",
-    "free_sulfur_dioxide",
-    "total_sulfur_dioxide",
-    "density",
-    "pH",
-    "sulphates",
-    "alcohol",
-    "quality"
-]
+# Create a GradientBoostedTreeRegressor
+gbt = GBTRegressor(labelCol="quality")
 
-# Calculate the correlation matrix
-correlation_matrix = wine.select(columns).toPandas().corr()
+# Train the model
+model = gbt.fit(train_data)
 
-# Show the correlation matrix
-print(correlation_matrix)
+# Make predictions on the test data
+predictions = model.transform(test_data)
+
+# Evaluate the model
+evaluator = RegressionEvaluator(labelCol="quality", metricName="rmse")
+rmse = evaluator.evaluate(predictions)
+mse = evaluator.evaluate(predictions, {evaluator.metricName: "mse"})
+
+print("Root Mean Squared Error (RMSE):", rmse)
+print("Mean Squared Error (MSE):", mse)
 
 # Stop the SparkSession
 spark.stop()
