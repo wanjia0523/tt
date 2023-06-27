@@ -27,11 +27,27 @@ wine = spark.read.format("csv") \
     .option("path", "hdfs:///lab_test/wine.csv") \
     .load()
 
+# Specify the columns for correlation calculation
+columns = [
+    "fixed_acidity",
+    "volatile_acidity",
+    "citric_acid",
+    "residual_sugar",
+    "chlorides",
+    "free_sulfur_dioxide",
+    "total_sulfur_dioxide",
+    "density",
+    "pH",
+    "sulphates",
+    "alcohol",
+    "quality"
+]
+
 # Calculate the correlation matrix
-correlation_matrix = wine.stat.corr()
+correlation_matrix = wine.select(columns).toPandas().corr()
 
 # Show the correlation matrix
-correlation_matrix.show()
+print(correlation_matrix)
 
 # Stop the SparkSession
 spark.stop()
